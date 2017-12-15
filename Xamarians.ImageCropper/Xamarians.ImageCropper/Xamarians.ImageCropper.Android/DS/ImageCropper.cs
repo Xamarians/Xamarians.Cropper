@@ -19,31 +19,11 @@ namespace Xamarians.ImageCropper.Droid.DS
         {
 
         }
-        //public static void Initialize(Context context)
-        //{
-        //    _context = context;
-        //    ImageCropperService.Init(new ImageCropper());
-        //}
-        //public Task<string> CropImage(string Image, int Width, int Height)
-        //{
-        //    var tcs = new TaskCompletionSource<string>();
-        //    var result = GetBitmap(Image);
-        //    Bitmap bitmap = CreateScaledBitmap(result, Width, Height, true);
-        //    var dir = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryPictures);
-        //    var filename = System.IO.Path.Combine(dir.Path, $"image.jpg");
-        //    using (var fs = new FileStream(filename, FileMode.OpenOrCreate))
-        //    {
-        //        bitmap.Compress(CompressFormat.Jpeg, 100, fs);
-        //        bitmap.Recycle();
-        //        bitmap.Dispose();
-        //    }
-        //    tcs.SetResult(filename);
-        //    return tcs.Task;
-        //}
-        public Task<string> CropImage(InputImage inputImage)
+      
+        public Task<string> CropImage(InputImage inputImage, int Degree)
         {
             var tcs = new TaskCompletionSource<string>();
-            var result = WriteImage(inputImage);
+            var result = WriteImage(inputImage, Degree);
             var dir = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryPictures);
             var filename = System.IO.Path.Combine(dir.Path, $"image.jpg");
             using (var fs = new FileStream(filename, FileMode.OpenOrCreate))
@@ -54,31 +34,34 @@ namespace Xamarians.ImageCropper.Droid.DS
             }         
             tcs.SetResult(filename);
             return tcs.Task;
-        }    
-        private Bitmap WriteImage(InputImage input)
-        {
-            try
+        }       
+            private Bitmap WriteImage(InputImage input, int degree)
             {
-                var bitmap = GetBitmap(input.ImageSource);
-                double rw = bitmap.Width / (input.ImageWidth * input.ImageScale);
-                double rh = bitmap.Height / (input.ImageHeight * input.ImageScale);
-                double cropX = input.CropX * rw;
-                double cropY = input.CropY * rh;
-                double cropW = input.CropWidth * rw;
-                double cropH = input.CropHeight * rh;
-                return CreateBitmap(bitmap, (int)cropX, (int)cropY, (int)cropW, (int)cropH);
+                try
+                {
+                    var bitmap = GetBitmap(input.ImageSource);
+                    bitmap = RotateBitmap.rotateImage(bitmap, degree);
+                    RotateBitmap rotateBitmap = new RotateBitmap(bitmap);
+                    double rw = bitmap.Width / (input.ImageWidth * input.ImageScale);
+                    double rh = bitmap.Height / (input.ImageHeight * input.ImageScale);
+                    double cropX = input.CropX * rw;
+                    double cropY = input.CropY * rh;
+                    double cropW = input.CropWidth * rw;
+                    double cropH = input.CropHeight * rh;
+                    return CreateBitmap(bitmap, (int)cropX, (int)cropY, (int)cropW, (int)cropH);
+                }
+                catch (Exception e)
+                {
+
+                }
+                finally
+                {
+                    _bitmap.Recycle();
+                    _bitmap.Dispose();
+                }
+                return null;
             }
-            catch (Exception e)
-            {
-                
-            }
-            finally
-            {
-                _bitmap.Recycle();
-                _bitmap.Dispose();
-            }
-            return null;
-        }
+        
 
         private Android.Net.Uri getImageUri(String path)
         {

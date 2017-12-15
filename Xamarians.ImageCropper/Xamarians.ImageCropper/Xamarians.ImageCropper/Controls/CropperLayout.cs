@@ -63,6 +63,7 @@ namespace Xamarians.ImageCropper.Controls
         public static readonly BindableProperty ImageSourceProperty = BindableProperty.Create("ImageSource", typeof(string), typeof(CropperView), null);
 
         public static event EventHandler<string> OnImageCropped;
+        int Degree = 90;
         public string ImageSource
         {
             get { return (string)GetValue(ImageSourceProperty); }
@@ -73,18 +74,54 @@ namespace Xamarians.ImageCropper.Controls
         {
             RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
-
-            var cropButton = new Button
+            var StackView = new StackLayout
             {
                 HeightRequest = 60,
-               Text="Crop",
-               TextColor = Color.White,
-               BackgroundColor = Color.Black,
-               BorderRadius = 0,
+                BackgroundColor = Color.Black,
+                HorizontalOptions = LayoutOptions.FillAndExpand,
+                Orientation = StackOrientation.Horizontal
+            };
+            var cropButton = new Button
+            {
+                HeightRequest = 55,
+                Text = "Crop",
+                TextColor = Color.White,
+                BackgroundColor = Color.Transparent,
+                HorizontalOptions = LayoutOptions.EndAndExpand,
+                BorderRadius = 0,
             };
             cropButton.Clicked += (sender, e) => { OnCropClicked(); };
+
+            var cancelButton = new Button
+            {
+                HeightRequest = 55,
+                Text = "Cancel",
+                TextColor = Color.White,
+                BackgroundColor = Color.Transparent,
+                HorizontalOptions = LayoutOptions.StartAndExpand,
+                BorderRadius = 0,
+            };
+            cancelButton.Clicked += (sender, e) => { OnCancelClicked(); };
+
+            var RotateImage = new Image
+            {
+                HorizontalOptions = LayoutOptions.CenterAndExpand,
+                Source = "rotate_button.png",
+                HeightRequest = 18,
+                WidthRequest = 50,
+            };
+            var tapGestureRecognizer = new TapGestureRecognizer();
+            tapGestureRecognizer.Tapped += (s, e) =>
+            {
+                OnRotateClicked();
+            };
+            RotateImage.GestureRecognizers.Add(tapGestureRecognizer);
+            StackView.Children.Add(cropButton);
+            StackView.Children.Add(RotateImage);
+            StackView.Children.Add(cancelButton);
+
             Children.Add(Cropperlayout, 0, 0);
-            Children.Add(cropButton, 0, 1);
+            Children.Add(StackView, 0, 1);
         }
         protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
@@ -96,7 +133,7 @@ namespace Xamarians.ImageCropper.Controls
         }
         private async void OnCropClicked()
         {
-           
+
             var x = Cropperlayout.panContainer.CropperContainer.Margin.Left + Cropperlayout.panContainer.CropperContainer.TranslationX +
                 (Cropperlayout.panContainer.CropperView.X);
 
@@ -108,15 +145,39 @@ namespace Xamarians.ImageCropper.Controls
                 ImageWidth = Cropperlayout.customImage.Width,
                 ImageHeight = Cropperlayout.customImage.Height,
                 ImageScale = Cropperlayout.customImage.Scale,
-                ImageSource = Cropperlayout.ImageSource,
+                ImageSource = Cropperlayout.customImage.ImageSource,
                 CropX = x - Cropperlayout.customImage.X,
                 CropY = y,
                 CropWidth = Cropperlayout.panContainer.CropperView.Width,
                 CropHeight = Cropperlayout.panContainer.CropperView.Height,
             };
-            var result = await DependencyService.Get<IImageCropper>().CropImage(inputImage);
+            var result = await DependencyService.Get<IImageCropper>().CropImage(inputImage, Degree - 90);
             OnImageCropped?.Invoke(this, result);
-            
-        }      
+
+        }
+
+        private async void OnCancelClicked()
+        {
+
+        }
+        private async void OnRotateClicked()
+        {
+            if (Degree == 360)
+            {
+                Degree = 90;
+                Cropperlayout.customImage.Rotation = 0;
+            }
+            else
+            {
+                await Cropperlayout.customImage.RotateTo(Degree);
+                Degree = Degree + 90;
+            }
+        }
+        protected override void OnSizeAllocated(double width, double height)
+        {
+            base.OnSizeAllocated(width, height);
+            UpdateChildrenLayout();
+        }
     }
 }
+

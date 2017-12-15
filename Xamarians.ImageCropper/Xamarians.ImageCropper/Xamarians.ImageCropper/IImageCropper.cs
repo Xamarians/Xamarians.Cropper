@@ -6,6 +6,7 @@ namespace Xamarians.ImageCropper
 {
     public interface IImageCropper
     {
-     Task<string> CropImage(InputImage inputImage);
-    }   
+        Task<string> CropImage(InputImage inputImage, int Degree);
+
+    }
 }
